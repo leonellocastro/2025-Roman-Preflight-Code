@@ -2,7 +2,6 @@ import proper
 import numpy as np
 import matplotlib.pylab as plt
 import astropy.io.fits as fits
-from coronagraph import coronagraph
 
 def hlc_occulter(wavelength, diam, scale_occulter, grid_size, beam_ratio, f_lens, pupil, fpm_real, fpm_imag, dm1, dm2, lyot_stop):
     # 1. Initialize the wavefront at the entrance pupil
