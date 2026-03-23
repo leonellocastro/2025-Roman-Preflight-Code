@@ -11,8 +11,8 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 # --- ANIMATION PARAMETERS ---
 sigma_range = np.linspace(0, 10, 51)
-vmin = -10 # Log contrast minimum for plotting (adjust based on your sqrt_contrast)
-vmax = 0  # Log contrast maximum for plotting
+vmin = -16 # Log contrast minimum for plotting (adjust based on your sqrt_contrast)
+vmax = -8  # Log contrast maximum for plotting
 
 focal_grid = hp.make_focal_grid(q=8, num_airy=16)
 
@@ -66,53 +66,32 @@ def animate_coronagraph_gaussian_sigma(sigma_lambda_d):
     wavefront_planet = hp.Wavefront(sqrt_contrast * telescope_pupil * np.exp(2j * np.pi * pupil_grid.x * planet_offset_x) * np.exp(2j * np.pi * pupil_grid.y * planet_offset_y))
 
     # obtain total wavefront intensity at pupil plane
-    wavefront_total_intensity = wavefront_star.intensity + wavefront_planet.intensity
+    wavefront_total = hp.Wavefront(wavefront_star.electric_field + wavefront_planet.electric_field)
 
-    # obtain the wavefront intensity at focal plane for the star
-    focal_star = prop.forward(wavefront_star)
+    # obtain the total wavefront at focal plane
+    focal_total = prop.forward(wavefront_total)
 
-    # obtain the wavefront intensity at focal plane for the planet
-    focal_planet = prop.forward(wavefront_planet)
-
-    # obtain total wavefront intensity at focal plane
-    focal_total_intensity = focal_star.intensity + focal_planet.intensity
+    # obtain maximum focal plane intensity
+    focal_total_max = np.max(focal_total.intensity)
 
     # create the Gaussian occulter mask
     # sigma_lambda_d = 5
     occulter_mask = gaussian_occulter_generator(focal_grid,sigma_lambda_d)
     occulter_mask = hp.Field(occulter_mask,focal_grid)
 
-    # plot the focal plane intensity (star + planet) with occulter (focal plane, after lens 1)
-    E_focal_total = focal_star.electric_field + focal_planet.electric_field
-
-    # apply the occulter mask (Field * Field multiplication IS SUPPORTED for Field/Field on the same grid)
-    E_focal_after_occulter = E_focal_total * occulter_mask
-
-    # Calculate the intensity for plotting (Intensity = |E|^2)
-    I_focal_after_occulter = np.abs(E_focal_after_occulter)**2
-
-    # after lens 2 but before Lyot Stop
-    prop_no_lyot = hp.LyotCoronagraph(pupil_grid,occulter_mask)
-    star_occulter_no_lyot = prop_no_lyot.forward(wavefront_star)
-    planet_occulter_no_lyot = prop_no_lyot.forward(wavefront_planet)
-    total_intensity_occulter_no_lyot = star_occulter_no_lyot.intensity + planet_occulter_no_lyot.intensity
-
     # create the occulter mask and Lyot Stop in the Lyot Coronagraph
     ratio = 0.7 # Lyot Stop diameter ratio
     lyot_stop_generator = hp.make_circular_aperture(ratio*diameter) # percentage of the telescope diameter
     lyot_stop_mask = lyot_stop_generator(pupil_grid)
     prop_lyot = hp.LyotCoronagraph(pupil_grid,occulter_mask,lyot_stop_mask)
-    star_occulter_lyot = prop_lyot.forward(wavefront_star)
-    planet_occulter_lyot = prop_lyot.forward(wavefront_planet)
-    total_intensity_occulter_lyot = star_occulter_lyot.intensity + planet_occulter_lyot.intensity
+    occulter_lyot_wavefront_pupil = prop_lyot.forward(wavefront_total)
 
     # propagate the wavefront to the focal plane
-    wavefront_focal_after_occulter_star = prop.forward(star_occulter_lyot)
-    wavefront_focal_after_occulter_planet = prop.forward(planet_occulter_lyot)
-    wavefront_focal_after_occulter_total_intensity = wavefront_focal_after_occulter_star.intensity + wavefront_focal_after_occulter_planet.intensity
+    wavefront_focal_after_occulter_total = prop.forward(occulter_lyot_wavefront_pupil)
+    wavefront_focal_after_occulter_total_intensity = wavefront_focal_after_occulter_total.intensity
 
     # Normalize and convert to log scale
-    I_norm = wavefront_focal_after_occulter_total_intensity / wavefront_focal_after_occulter_total_intensity.max()
+    I_norm = wavefront_focal_after_occulter_total_intensity / focal_total_max
     log_I_norm = np.log10(I_norm)
     
     # CRITICAL FIX 4: Reshape is required for matplotlib's set_data()
@@ -134,7 +113,7 @@ ani = FuncAnimation(
     animate_coronagraph_gaussian_sigma, 
     frames=sigma_range, # Use the list of separations as frames
     blit=False, 
-    interval=100 # milliseconds between frames
+    interval=1000 # milliseconds between frames
 )
 
 # --- VIDEO SAVING LOGIC ---
@@ -160,5 +139,4 @@ except FileNotFoundError:
     print("Please install FFmpeg and update the 'ffmpeg_path' variable in the script with the correct location.")
 except Exception as e:
     print(f"An error occurred during saving: {e}")
-
 plt.show()
