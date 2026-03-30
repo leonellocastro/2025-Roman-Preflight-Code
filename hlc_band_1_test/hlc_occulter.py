@@ -75,6 +75,9 @@ def hlc_occulter(wavelength, diam, scale_occulter, grid_size, beam_ratio, f_lens
 
     # 10. Apply Lyot Stop using Lyot Stop file
     lyot_map = proper.prop_readmap(wfo, lyot_stop, SAMPLING=proper.prop_get_sampling(wfo))
+    rotation_angle = 180
+    
+    lyot_map = proper.prop_rotate(lyot_map, rotation_angle)
     proper.prop_multiply(wfo, lyot_map)
 
     # 11. Plot the wavefront at the Lyot Plane after Lyot Stop
