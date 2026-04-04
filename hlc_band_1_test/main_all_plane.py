@@ -17,8 +17,14 @@ use_polmap = False
 polaxis = 10
 
 data_root = os.path.join(
-    "YOUR PATH HERE",
-    "roman_preflight_proper_public_v2.0.2_python",
+    "C:\\",
+    "Users",
+    "leone",
+    "OneDrive",
+    "Documents",
+    "GitHub",
+    "2025-Roman-Preflight-Code",
+    "roman_preflight_proper_public_v2.0.1_python",
     "roman_preflight_proper",
     "preflight_data",
     "hlc_20190210b",

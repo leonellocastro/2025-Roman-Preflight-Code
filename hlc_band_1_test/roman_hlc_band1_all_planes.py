@@ -550,7 +550,7 @@ def hlc(
     if scale_occulter != 0:
         hdu = fits.PrimaryHDU(intensity_detector)
         hdu.header["MODE"] = "HLC Band 1"
-        hdu.header["ITERATION"] = "Final"
+        hdu.header["ITER"] = "Final"
         hdu.header["SAMPLING"] = sampling
         hdu.writeto("hlc_band1_proper_results.fits", overwrite=True)
 
