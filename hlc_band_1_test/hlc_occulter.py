@@ -9,7 +9,7 @@ def hlc_occulter(wavelength, diam, scale_occulter, grid_size, beam_ratio, f_lens
 
     # 2. Read the pupil map and apply it to the wavefront
     sampling = diam/grid_size
-    pupil = proper.prop_errormap( wfo, pupil, 0, 0, AMPLITUDE=True, SAMPLING=sampling)
+    pupil = proper.prop_errormap(wfo, pupil, 0, 0, AMPLITUDE=True, SAMPLING=sampling)
     print("Type of pupil:", type(pupil), "Shape of pupil:", pupil.shape)
     proper.prop_multiply(wfo, pupil)
     amplitude = proper.prop_get_amplitude(wfo)

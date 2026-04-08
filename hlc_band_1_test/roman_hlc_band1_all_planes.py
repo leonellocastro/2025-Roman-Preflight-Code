@@ -325,9 +325,39 @@ def hlc(
     d_lens_fold4 = 0.202226
     d_fold4_image = 0.050206330646919
 
-
     # initialize wavefront
-    wavefront = proper.prop_begin(diam, wavelength, grid_size, beam_ratio) # same now 
+    contrast = 1e0
+    sqrt_contrast = np.sqrt(contrast)
+
+    wavefront_star = proper.prop_begin(diam, wavelength, grid_size, beam_ratio) # same now
+    wavefront_planet = proper.prop_begin(diam, wavelength, grid_size, beam_ratio) # same now
+    
+    # 1. Get simulation parameters
+    nw = proper.prop_get_gridsize(wavefront_planet)
+    wavelength = proper.prop_get_wavelength(wavefront_planet)
+    # Sampling in meters per pixel
+    sampling = proper.prop_get_sampling(wavefront_planet)
+    # Beam diameter in meters (usually defined at entrance)
+    beam_diam = proper.prop_radius(wavefront_planet) * 2
+
+    proper.prop_multiply(wavefront_planet, sqrt_contrast)
+    offset_x_lamD = 15.0
+    offset_y_lamD = 0.0
+    
+    # 2. Create the coordinate grid (in meters)
+    # Coordinates range from -(N/2) * sampling to +(N/2-1) * sampling
+    x = (np.arange(nw) - nw // 2) * sampling
+    y = (np.arange(nw) - nw // 2) * sampling
+    xx, yy = np.meshgrid(x, y)
+    
+    # 3. Calculate the phase ramp
+    # HCIPY math: exp(2j * pi * x * (offset/D))
+    # Note: In PROPER, x is in meters, so we divide by beam_diam
+    phase_ramp = np.exp(2j * np.pi * (xx * offset_x_lamD / 1 + yy * offset_y_lamD / 1))
+    proper.prop_multiply(wavefront_planet, phase_ramp)
+
+    wavefront = wavefront_star
+    wavefront.wfarr = wavefront_star.wfarr + wavefront_planet.wfarr
 
     # loading pupil mask, scale and apply to wavefront
     pupil_map = trim(fits.getdata(pupil), grid_size)
