@@ -69,7 +69,7 @@ plt.show()
 
 # create the Gaussian occulter mask
 sigma_lambda_d = 5
-occulter_mask = gaussian_occulter_generator(focal_grid,sigma_lambda_d)
+occulter_mask = gaussian_occulter_generator(focal_grid, sigma_lambda_d)
 
 # plot the focal plane intensity (star + planet) with occulter (focal plane, after lens 1)
 E_focal_total = focal_star.electric_field + focal_planet.electric_field
