@@ -341,7 +341,7 @@ def hlc(
     beam_diam = proper.prop_radius(wavefront_planet) * 2
 
     proper.prop_multiply(wavefront_planet, sqrt_contrast)
-    offset_x_lamD = 15.0
+    offset_x_lamD = 5.0
     offset_y_lamD = 0.0
     
     # 2. Create the coordinate grid (in meters)
@@ -353,7 +353,7 @@ def hlc(
     # 3. Calculate the phase ramp
     # HCIPY math: exp(2j * pi * x * (offset/D))
     # Note: In PROPER, x is in meters, so we divide by beam_diam
-    phase_ramp = np.exp(2j * np.pi * (xx * offset_x_lamD / 1 + yy * offset_y_lamD / 1))
+    phase_ramp = np.exp(2j * np.pi * (xx * offset_x_lamD / diam + yy * offset_y_lamD / diam))
     proper.prop_multiply(wavefront_planet, phase_ramp)
 
     wavefront = wavefront_star
