@@ -1,3 +1,178 @@
+import numpy as np
+import proper
+import astropy.io.fits as fits
+import matplotlib.pyplot as plt
+
+# --- CONFIGURATION ---
+PIX_SIZE = 1024
+# Beam ratio defines the beam diameter relative to the grid size.
+# For Roman, the 311px pupil should be centered in the 1024px grid.
+BEAM_RATIO = 311.0 / 1024.0 
+WAVELENGTH = 0.575e-6
+DIAMETER = 2.363114
+FOCAL_LENGTH = 24 * DIAMETER
+DM_SEPARATION = 1.0 # meters, distance between DM1 and DM2
+DISTANCE_TO_L1 = 10.0 # meters, distance from DM2 to L1 (example value)
+
+# File Paths (Updated to your local paths)
+pupil_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\pupil.fits"
+fpm_real_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_fpm_trans_0.54625000um_real.fits"
+fpm_imag_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_fpm_trans_0.54625000um_imag.fits"
+lyot_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\lyot.fits"
+dm1 = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_dm1.fits"
+dm2 = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_dm2.fits"
+
+def get_centered_pupil(filepath, target_size):
+    """
+    Loads the pupil, centers it in the grid, and SHIFTS it for PROPER's internal
+    coordinate system (origin at 0,0). This fixes the 'four corners' bug.
+    """
+    data = fits.getdata(filepath)
+    h, w = data.shape
+    
+    # Create a zero array of the target size (centered spatial domain)
+    container = np.zeros((target_size, target_size), dtype=np.float64)
+    
+    # Calculate indices to place the pupil in the physical center
+    start_y = (target_size - h) // 2
+    start_x = (target_size - w) // 2
+    container[start_y:start_y+h, start_x:start_x+w] = data
+    
+    # Move centered pupil to the corners.
+    shifted_container = np.fft.ifftshift(container)
+    
+    return shifted_container
+
+def propagate_coronagraph(tilt_x_lamD=0.0, tilt_y_lamD=0.0):
+    """
+    Propagates a single wavefront through the Roman HLC coronagraph.
+    """
+    # 1. Initialize Wavefront
+    wf = proper.prop_begin(DIAMETER, WAVELENGTH, PIX_SIZE, BEAM_RATIO)
+    
+    # 2. Apply Pupil Mask
+    # The pupil is now correctly shifted for PROPER
+    pupil_shifted = get_centered_pupil(pupil_path, PIX_SIZE)
+    proper.prop_multiply(wf, pupil_shifted)
+    
+    # 3. Apply Source Tilt (simulating planet/jitter)
+    if tilt_x_lamD != 0 or tilt_y_lamD != 0:
+        # prop_zernikes uses indices [2, 3] for X/Y tilt
+        proper.prop_zernikes(wf, [2, 3], [tilt_x_lamD, tilt_y_lamD], 1.0)
+
+    proper.prop_define_entrance(wf)
+
+    # --- DM SECTION FIX ---
+    # Get current wavefront sampling in meters/pixel
+    current_samp = proper.prop_get_sampling(wf)
+
+    # Pass current_samp to the SAMPLING keyword to override the missing header info
+    dm1_map = proper.prop_readmap(wf, dm1, 0, 0, SAMPLING=current_samp)
+    dm2_map = proper.prop_readmap(wf, dm2, 0, 0, SAMPLING=current_samp)
+
+    # Apply DM1
+    proper.prop_dm(wf, dm1_map, 0, 0, 1.0) # 1.0 is a scaling factor
+
+    # Propagate to DM2 (dm_separation is usually ~1.0 meter in Roman CGI)
+    proper.prop_propagate(wf, DM_SEPARATION, "DM2")
+
+    # Apply DM2
+    proper.prop_dm(wf, dm2_map, 0, 0, 1.0)
+
+    # Propagate from DM2 to the rest of the system
+    # (Subtract DM_SEPARATION from the distance to L1 if necessary)
+    proper.prop_propagate(wf, DISTANCE_TO_L1, "L1")
+    # -----------------------
+
+    # 4. To Focal Plane Mask (FPM)
+    proper.prop_lens(wf, FOCAL_LENGTH, "L1")
+    proper.prop_propagate(wf, FOCAL_LENGTH, "FPM")
+
+    # Apply FPM
+    samp = proper.prop_get_sampling(wf)
+    fpm_r = proper.prop_readmap(wf, fpm_real_path, 0, 0, AMPLITUDE=True, SAMPLING=samp)
+    fpm_i = proper.prop_readmap(wf, fpm_imag_path, 0, 0, AMPLITUDE=True, SAMPLING=samp)
+    proper.prop_multiply(wf, fpm_r + 1j*fpm_i)
+
+    # 5. To Lyot Plane
+    proper.prop_propagate(wf, FOCAL_LENGTH, "Lyot Lens")
+    proper.prop_lens(wf, FOCAL_LENGTH, "L2")
+    proper.prop_propagate(wf, FOCAL_LENGTH, "Lyot Stop")
+
+    # Apply Lyot Stop
+    lyot_samp = proper.prop_get_sampling(wf)
+    lyot_map = proper.prop_readmap(wf, lyot_path, 0, 0, AMPLITUDE=True, SAMPLING=lyot_samp)
+    proper.prop_multiply(wf, lyot_map)
+
+    # 6. To Final Detector
+    proper.prop_propagate(wf, FOCAL_LENGTH, "Camera Lens")
+    proper.prop_lens(wf, FOCAL_LENGTH, "L3")
+    proper.prop_propagate(wf, FOCAL_LENGTH, "Detector")
+
+    return wf
+
+def run_scene(planet_offset_lamD, contrast):
+    """
+    Simulates the star and the planet and combines them.
+    """
+    print("--- Simulating Star ---")
+    wf_star = propagate_coronagraph(0, 0)
+    img_star = np.abs(wf_star.wfarr)**2
+    
+    print(f"--- Simulating Planet at {planet_offset_lamD} L/D ---")
+    wf_planet = propagate_coronagraph(planet_offset_lamD, 0)
+    img_planet = np.abs(wf_planet.wfarr)**2
+    
+    # Sum intensities and shift to center the result for viewing
+    combined = img_star + (img_planet * contrast)
+    final_image = np.fft.fftshift(combined)
+    
+    return final_image, wf_star
+
+if __name__ == "__main__":
+    planet_loc = 6.5
+    planet_contrast = 1e-4
+    
+    try:
+        img, wf_obj = run_scene(planet_loc, planet_contrast)
+        
+        # Determine axes units in Lambda/D
+        samp = proper.prop_get_sampling(wf_obj)
+        lamD_unit = (WAVELENGTH * FOCAL_LENGTH) / DIAMETER
+        pix_per_lamD = lamD_unit / samp
+        extent_val = (PIX_SIZE / 2) / pix_per_lamD
+
+        plt.figure(figsize=(10, 8))
+        norm_img = img / img.max()
+        
+        # Show image with extent to use Lambda/D units on axes
+        plt.imshow(np.log10(norm_img + 1e-12), 
+                   extent=[-extent_val, extent_val, -extent_val, extent_val], 
+                   cmap='inferno', vmin=-12, vmax=-3)
+
+        
+        plt.colorbar(label='Log10 Normalized Intensity')
+        plt.title(f"Roman HLC Simulation: Star + Planet ({planet_loc} $\\lambda/D$)")
+        plt.xlabel("$\\lambda/D$")
+        plt.ylabel("$\\lambda/D$")
+        
+        # Dark Hole bounds (3 to 9 L/D)
+        # ax = plt.gca()
+        # ax.add_patch(plt.Circle((0, 0), 3, color='w', fill=False, ls=':', alpha=0.7))
+        # ax.add_patch(plt.Circle((0, 0), 9, color='w', fill=False, ls=':', alpha=0.7))
+        
+        plt.show()
+    except Exception as e:
+        print(f"\nSimulation Failed: {e}")
+
+
+
+
+
+
+
+
+
 """
 import numpy as np
 import proper
@@ -734,7 +909,7 @@ def hlc(
     proper.prop_errormap( wavefront, map_dir+'roman_phasec_OAP5_phase_error_V3.0.fits', WAVEFRONT=True)
     _plot_plane(wavefront, "OAP5", plot_planes=plot_planes)
 
-    # FPM - BUG
+    # FPM
     proper.prop_propagate(wavefront, d_oap5_fpm+fpm_z_shift_m, "FPM", TO_PLANE=True)
 
     _write_complex_fits("hlc_test_fpm.fits", proper.prop_get_wavefront(wavefront))
