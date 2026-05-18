@@ -14,7 +14,7 @@ FOCAL_LENGTH = 24 * DIAMETER
 DM_SEPARATION = 1.0 # meters, distance between DM1 and DM2
 DISTANCE_TO_L1 = 10.0 # meters, distance from DM2 to L1 (example value)
 
-# File Paths (Updated to your local paths)
+# File Paths (Updated to local paths)
 pupil_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\pupil.fits"
 fpm_real_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_fpm_trans_0.54625000um_real.fits"
 fpm_imag_path = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\hlc_fpm_trans_0.54625000um_imag.fits"
@@ -151,10 +151,8 @@ if __name__ == "__main__":
                    cmap='inferno', vmin=-12, vmax=-3)
 
         
-        plt.colorbar(label='Log10 Normalized Intensity')
-        plt.title(f"Roman HLC Simulation: Star + Planet ({planet_loc} $\\lambda/D$)")
-        plt.xlabel("$\\lambda/D$")
-        plt.ylabel("$\\lambda/D$")
+        plt.colorbar(label=r'$log_{10}(I)$')
+        plt.title("Roman HLC Simulation")
         
         # Dark Hole bounds (3 to 9 L/D)
         # ax = plt.gca()
