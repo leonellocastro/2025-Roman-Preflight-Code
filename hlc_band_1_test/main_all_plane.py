@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 import proper
 import roman_preflight_proper
 
@@ -83,7 +84,9 @@ final_field, final_sampling = hlc(
 
 unocculted_psf = np.abs(unocculted_field) ** 2
 final_psf = np.abs(final_field) ** 2
-psf_peak_ratio = np.max(final_psf) / np.max(unocculted_psf)
+max_unocculted = np.max(unocculted_psf)
+max_final = np.max(final_psf)
+psf_peak_ratio = max_final / max_unocculted
 
 print(f"DM1 file: {dm1}")
 print(f"DM2 file: {dm2}")
@@ -93,3 +96,10 @@ print(f"Lyot stop file: {lyot_stop}")
 print(f"Polarization enabled: {use_polmap} (polaxis={polaxis})")
 print(f"Output sampling (m/pix): {final_sampling:.6e}")
 print(f"Peak intensity ratio (occulted / unocculted): {psf_peak_ratio:.2e}")
+
+# Plot the normalized intensity of the star field with occulter, using the no-occultation case as the normalization reference (log scale)
+plt.figure(figsize=(10, 8))
+plt.imshow(np.log10(final_psf / max_unocculted + 1e-12), origin="lower", cmap='magma')
+plt.colorbar(label="Normalized Intensity (log scale)")
+plt.title("Star Field with Occulter", fontsize=18)
+plt.show()

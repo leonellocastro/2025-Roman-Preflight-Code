@@ -33,11 +33,11 @@ def _show_image(data, title, power=1.0, fft_center=False):
     image = np.abs(image)
     if power != 1.0:
         image = np.power(image, power)
-    plt.figure(figsize=(12, 8))
-    plt.imshow(np.log10(image + 1e-12), origin="lower", cmap='magma')
-    plt.colorbar(label="Intensity (arbitrary units)")
-    plt.title(title, fontsize=18)
-    plt.show()
+    #plt.figure(figsize=(12, 8))
+    #plt.imshow(np.log10(image + 1e-12), origin="lower", cmap='magma')
+    #plt.colorbar(label="Intensity (arbitrary units)")
+    #plt.title(title, fontsize=18)
+    #plt.show()
 
 
 def _plot_plane(wavefront, title, power=1.0, fft_center=False, plot_planes=True):
