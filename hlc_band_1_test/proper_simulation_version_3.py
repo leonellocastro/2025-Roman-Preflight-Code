@@ -8,7 +8,7 @@ from roman_preflight_proper import ffts, mft2, polmap, trim
 import roman_preflight_proper as rp
 
 # --- HLC BAND 1 PHYSICAL CONSTANTS ---
-HLC_BAND1_LAMBDA0_M = 0.575e-6
+HLC_BAND1_LAMBDA0_M = 0.54625e-6
 HLC_BAND1_PUPIL_DIAM_PIX = 309.0
 HLC_BAND1_GRID_SIZE = 1024
 HLC_BAND1_BEAM_RATIO = HLC_BAND1_PUPIL_DIAM_PIX / HLC_BAND1_GRID_SIZE
@@ -64,8 +64,6 @@ def _apply_hlc_fpm(wavefront, wavelength_m, fpm_real_path, fpm_imag_path):
     real_map, header = fits.getdata(fpm_real_path, header=True)
     imag_map = fits.getdata(fpm_imag_path)
     
-    # CRITICAL FIX: Shift the coordinate centers so the FPM zero-point 
-    # aligns perfectly with the centered focused stellar PSF core.
     real_map = proper.prop_shift_center(real_map)
     imag_map = proper.prop_shift_center(imag_map)
     
@@ -95,7 +93,7 @@ def _apply_hlc_fpm(wavefront, wavelength_m, fpm_real_path, fpm_imag_path):
     wavefront.wfarr[:, :] = proper.prop_shift_center(wavefront0)
 
 def propagate_hlc_system(wavelength, diam, grid_size, beam_ratio, pupil, fpm_real, fpm_imag, dm1, dm2, lyot_stop, 
-                         offset_x_lamD=0.0, offset_y_lamD=0.0, is_planet=False, planet_contrast=1.0):
+                         offset_x_lamD=0.0, offset_y_lamD=0.0, is_planet=False, planet_contrast=1.0, occulter_applied=True):
     """Propagates a single coherent wavefront through the entire flight-path optical train."""
     wavefront = proper.prop_begin(diam, wavelength, grid_size, beam_ratio)
     nw = proper.prop_get_gridsize(wavefront)
@@ -227,7 +225,10 @@ def propagate_hlc_system(wavelength, diam, grid_size, beam_ratio, pupil, fpm_rea
     proper.prop_propagate(wavefront, fl_oap5, "FPM", TO_PLANE=True)
 
     # Apply true complex FPM matrix (Real + Imaginary) via Matrix Fourier Transform (MFT)
-    _apply_hlc_fpm(wavefront, wavelength, fpm_real, fpm_imag)
+    if occulter_applied:
+        # _apply_hlc_fpm(wavefront, wavelength, fpm_real, fpm_imag)
+        # proper.prop_circular_obscuration(wavefront, 3.0 * wavelength / diam * (HLC_BAND1_PUPIL_DIAM_PIX / grid_size))
+        proper.prop_circular_obscuration(wavefront, 1e-8)
 
     # 5. Lyot Stop & Intermediate Field Stop Plane
     proper.prop_propagate(wavefront, d_fpm_oap6, "OAP6")
@@ -278,6 +279,7 @@ def propagate_hlc_system(wavelength, diam, grid_size, beam_ratio, pupil, fpm_rea
 
     return field, sampling
 
+"""
 if __name__ == "__main__":
     DATA_DIR = "C:\\Users\\leone\\OneDrive\\Documents\\GitHub\\2025-Roman-Preflight-Code\\roman_preflight_proper_public_v2.0.1_python\\roman_preflight_proper\\preflight_data\\hlc_20190210b\\"
     
@@ -295,7 +297,7 @@ if __name__ == "__main__":
     raw_star_field, sampl = propagate_hlc_system(
         HLC_BAND1_LAMBDA0_M, 2.363114, HLC_BAND1_GRID_SIZE, HLC_BAND1_BEAM_RATIO,
         pupil_path, fpm_real_path, fpm_imag_path, dm1_path, dm2_path, lyot_path,
-        is_planet=False
+        is_planet=False, occulter_applied=True
     )
     # HARD COERCION FIXED: Clone the data into an independent memory matrix immediately
     field_star = np.copy(raw_star_field)
@@ -304,7 +306,7 @@ if __name__ == "__main__":
     raw_planet_field, _ = propagate_hlc_system(
         HLC_BAND1_LAMBDA0_M, 2.363114, HLC_BAND1_GRID_SIZE, HLC_BAND1_BEAM_RATIO,
         pupil_path, fpm_real_path, fpm_imag_path, dm1_path, dm2_path, lyot_path,
-        offset_x_lamD=planet_x_offset, is_planet=True, planet_contrast=planet_contrast
+        offset_x_lamD=planet_x_offset, is_planet=True, planet_contrast=planet_contrast, occulter_applied=True
     )
     # HARD COERCION FIXED: Clone the data into a completely separate memory matrix
     field_planet = np.copy(raw_planet_field)
@@ -316,12 +318,12 @@ if __name__ == "__main__":
     norm_intensity = combined_intensity / np.max(np.abs(fits.getdata(pupil_path))**2)
 
     out_dim = combined_intensity.shape[0]
-    extent_limit = (out_dim / 2.0) * 0.1  
+    extent_limit = (out_dim / 2.0) * 0.1
 
     plt.figure(figsize=(10, 8))
     plt.imshow(np.log10(norm_intensity + 1e-12), origin="lower", 
                extent=[-extent_limit, extent_limit, -extent_limit, extent_limit], 
-               cmap='magma')
+               cmap='magma', vmin=-9, vmax=-4)
     
     ax = plt.gca()
     ax.add_patch(plt.Circle((0, 0), 3, color='w', fill=False, ls=':', alpha=0.6, label='Dark Hole'))
@@ -332,3 +334,4 @@ if __name__ == "__main__":
     plt.ylabel("Angular Separation [$\\lambda_0/D$]", fontsize=12)
     plt.colorbar(label="Log10 Raw Contrast")
     plt.show()
+"""

@@ -34,7 +34,8 @@ def _show_image(data, title, power=1.0, fft_center=False):
     if power != 1.0:
         image = np.power(image, power)
     plt.figure(figsize=(12, 8))
-    plt.imshow(image, origin="lower", cmap=plt.cm.gray)
+    plt.imshow(np.log10(image + 1e-12), origin="lower", cmap='magma')
+    plt.colorbar(label="Intensity (arbitrary units)")
     plt.title(title, fontsize=18)
     plt.show()
 
@@ -326,7 +327,7 @@ def hlc(
     d_fold4_image = 0.050206330646919
 
     # initialize wavefront
-    contrast = 1e0
+    contrast = 0*1e0
     sqrt_contrast = np.sqrt(contrast)
 
     wavefront_star = proper.prop_begin(diam, wavelength, grid_size, beam_ratio) # same now
