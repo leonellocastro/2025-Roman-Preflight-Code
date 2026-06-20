@@ -585,4 +585,4 @@ def hlc(
         hdu.header["SAMPLING"] = sampling
         hdu.writeto("hlc_band1_proper_results.fits", overwrite=True)
 
-    return field, sampling
+    return field, sampling, wavefront

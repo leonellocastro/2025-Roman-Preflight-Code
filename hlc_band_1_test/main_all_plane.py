@@ -44,7 +44,7 @@ if not os.path.exists(fpm_real):
     fpm_imag = os.path.join(data_root, "hlc_fpm_trans_0.57600000um_imag.fits")
 
 
-unocculted_field, unocculted_sampling = hlc(
+unocculted_field, unocculted_sampling, unocculted_wavefront = hlc(
     wavelength,
     diam_telescope,
     scale_occulter=0,
@@ -63,7 +63,7 @@ unocculted_field, unocculted_sampling = hlc(
     polaxis=polaxis,
 )
 
-final_field, final_sampling = hlc(
+final_field, final_sampling, final_wavefront = hlc(
     wavelength,
     diam_telescope,
     scale_occulter=1,
@@ -82,11 +82,29 @@ final_field, final_sampling = hlc(
     polaxis=polaxis,
 )
 
+
+
+
+
+
+
+
 unocculted_psf = np.abs(unocculted_field) ** 2
 final_psf = np.abs(final_field) ** 2
 max_unocculted = np.max(unocculted_psf)
 max_final = np.max(final_psf)
 psf_peak_ratio = max_final / max_unocculted
+
+# Calculate the precise coordinate conversion factor
+final_sampling = proper.prop_get_sampling_radians(final_wavefront)
+sampling_in_lamD = final_sampling / (wavelength / diam_telescope)
+
+# Create a symmetric coordinate system centered on 0
+pixel_indices = np.arange(output_dim) - (output_dim / 2.0)
+lamD_coordinates = pixel_indices * sampling_in_lamD
+
+# Define the exact extent window for plot boundaries
+extent_bounds = [lamD_coordinates[0], lamD_coordinates[-1], lamD_coordinates[0], lamD_coordinates[-1]]
 
 print(f"DM1 file: {dm1}")
 print(f"DM2 file: {dm2}")
@@ -99,7 +117,9 @@ print(f"Peak intensity ratio (occulted / unocculted): {psf_peak_ratio:.2e}")
 
 # Plot the normalized intensity of the star field with occulter, using the no-occultation case as the normalization reference (log scale)
 plt.figure(figsize=(10, 8))
-plt.imshow(np.log10(final_psf / max_unocculted + 1e-12), origin="lower", cmap='magma')
-plt.colorbar(label="Normalized Intensity (log scale)")
-plt.title("Star Field with Occulter", fontsize=18)
+plt.imshow(np.log10(final_psf / max_unocculted + 1e-12), origin="lower", extent=extent_bounds, cmap='magma')
+plt.colorbar(label='Normalized Contrast $\\log_{10}(I/I_0)$')
+plt.xlabel('X Separation [$\\lambda_0/D$]', fontsize=20)
+plt.ylabel('Y Separation [$\\lambda_0/D$]', fontsize=20)
+plt.title("Star Field with Occulter", fontsize=20)
 plt.show()
