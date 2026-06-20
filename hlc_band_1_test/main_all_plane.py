@@ -43,7 +43,6 @@ if not os.path.exists(fpm_real):
     fpm_real = os.path.join(data_root, "hlc_fpm_trans_0.57600000um_real.fits")
     fpm_imag = os.path.join(data_root, "hlc_fpm_trans_0.57600000um_imag.fits")
 
-
 unocculted_field, unocculted_sampling, unocculted_wavefront = hlc(
     wavelength,
     diam_telescope,
@@ -82,13 +81,6 @@ final_field, final_sampling, final_wavefront = hlc(
     polaxis=polaxis,
 )
 
-
-
-
-
-
-
-
 unocculted_psf = np.abs(unocculted_field) ** 2
 final_psf = np.abs(final_field) ** 2
 max_unocculted = np.max(unocculted_psf)
@@ -119,7 +111,7 @@ print(f"Peak intensity ratio (occulted / unocculted): {psf_peak_ratio:.2e}")
 plt.figure(figsize=(10, 8))
 plt.imshow(np.log10(final_psf / max_unocculted + 1e-12), origin="lower", extent=extent_bounds, cmap='magma')
 plt.colorbar(label='Normalized Contrast $\\log_{10}(I/I_0)$')
-plt.xlabel('X Separation [$\\lambda_0/D$]', fontsize=20)
-plt.ylabel('Y Separation [$\\lambda_0/D$]', fontsize=20)
+plt.xlabel('X Separation [$\\lambda/D$]', fontsize=20)
+plt.ylabel('Y Separation [$\\lambda/D$]', fontsize=20)
 plt.title("Star Field with Occulter", fontsize=20)
 plt.show()
