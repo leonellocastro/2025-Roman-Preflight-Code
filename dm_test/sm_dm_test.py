@@ -172,16 +172,27 @@ def make_animation_sm_efc(iteration):
     
     plt.clf()
 
+    # Change font size for all plots (title, x axis, y axis, numbers, and colorbar labels)
+    for label in plt.get_current_fig_manager().canvas.figure.get_axes():
+        label.title.set_size(20)
+        label.xaxis.label.set_size(20)
+        label.yaxis.label.set_size(20)
+        label.tick_params(axis="both", which="major", labelsize=10)
+
     # 1. Electric field subplot
     plt.subplot(2, 2, 1)
-    plt.title('Electric field')
+    plt.title('Electric field', fontsize=20)
+    plt.xlabel('$\\lambda/D$', fontsize=20)
+    plt.ylabel('$\\lambda/D$', fontsize=20)
     electric_field = electric_fields[iteration] / np.sqrt(img_ref) 
     hp.imshow_field(electric_field, norm=electric_field_norm, grid_units=spatial_resolution)
     hp.contour_field(dark_zone, grid_units=spatial_resolution, levels=[0.5], colors='white')
 
     # 2. Intensity image subplot
     plt.subplot(2, 2, 2)
-    plt.title('Intensity image (Log Contrast)')
+    plt.title('Intensity image (Log Contrast)', fontsize=20)
+    plt.xlabel('$\\lambda/D$', fontsize=20)
+    plt.ylabel('$\\lambda/D$', fontsize=20)
     hp.imshow_field(np.log10(images[iteration] / img_ref), grid_units=spatial_resolution, cmap='inferno', vmin=-10, vmax=2)
     plt.colorbar()
     hp.contour_field(dark_zone, grid_units=spatial_resolution, levels=[0.5], colors='white')
@@ -189,20 +200,23 @@ def make_animation_sm_efc(iteration):
     # 3. SM Piston Map subplot
     plt.subplot(2, 2, 3)
     hsm.actuators = actuators[iteration]
-    plt.title('SM Piston Map in nm')
+    plt.title('SM Piston Map in nm', fontsize=20)
+    plt.xlabel('X (m)', fontsize=20)
+    plt.ylabel('Y (m)', fontsize=20)
     hp.imshow_field(hsm.surface * 1e9, grid_units=pupil_diameter, mask=aper, cmap='RdBu', vmin=-5, vmax=5)
     plt.colorbar()
 
     # 4. Average contrast plot
     plt.subplot(2, 2, 4)
-    plt.title('Average Contrast in Dark Zone')
+    plt.title('Average Contrast', fontsize=20)
+    plt.xlabel("Iteration", fontsize=20)
+    plt.ylabel("Contrast ($log_{10}(I/I_{total})$)", fontsize=20)
     plt.plot(range(iteration + 1), average_contrast[:iteration + 1], 'o-')
     plt.xlim(0, num_iterations)
     plt.yscale('log')
     plt.ylim(1e-11, 1e-5)
     plt.grid(color='0.5', linestyle='--')
-    plt.xlabel("EFC Iteration")
-    plt.ylabel("Average Contrast")
+
 
     plt.suptitle('SM EFC Iteration %d / %d' % (iteration + 1, num_iterations), fontsize='x-large')
 

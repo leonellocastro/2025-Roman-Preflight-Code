@@ -159,12 +159,12 @@ def make_animation_1dm(iteration):
     fig.clf() 
     
     # Re-establish subplot layout
-    
+
     # 1. Electric Field
     ax1 = fig.add_subplot(2, 2, 1)
     ax1.set_title('Focal Plane Electric field')
-    ax1.set_xlabel('x/D')
-    ax1.set_ylabel('y/D')
+    ax1.set_xlabel('$\\lambda/D$')
+    ax1.set_ylabel('$\\lambda/D$')
     electric_field = electric_fields[iteration] / np.sqrt(img_ref.max())
     hp.imshow_field(electric_field, norm=electric_field_norm, grid_units=spatial_resolution, ax=ax1)
     hp.contour_field(dark_zone, grid_units=spatial_resolution, levels=[0.5], colors='white', ax=ax1)
@@ -172,8 +172,8 @@ def make_animation_1dm(iteration):
     # 2. Intensity Image
     ax2 = fig.add_subplot(2, 2, 2)
     ax2.set_title('Focal Plane Intensity image')
-    ax2.set_xlabel('x/D')
-    ax2.set_ylabel('y/D')
+    ax2.set_xlabel('$\\lambda/D$')
+    ax2.set_ylabel('$\\lambda/D$')
     log_intensity = np.log10(images[iteration] / img_ref.max())
     img = hp.imshow_field(log_intensity, grid_units=spatial_resolution, cmap='inferno', vmin=-10, vmax=-5, ax=ax2)
     plt.colorbar(img, ax=ax2)
@@ -183,8 +183,8 @@ def make_animation_1dm(iteration):
     ax3 = fig.add_subplot(2, 2, 3)
     deformable_mirror.actuators = actuators[iteration]
     ax3.set_title('DM surface')
-    ax3.set_xlabel('x (m)')
-    ax3.set_ylabel('y (m)')
+    ax3.set_xlabel('X (m)')
+    ax3.set_ylabel('Y (m)')
     dm_img = hp.imshow_field(deformable_mirror.surface * 1e9, grid_units=pupil_diameter, mask=aperture, cmap='RdBu', vmin=-5, vmax=5, ax=ax3)
     plt.colorbar(dm_img, ax=ax3, label='DM Surface (nm)')
 
@@ -198,6 +198,13 @@ def make_animation_1dm(iteration):
     ax4.set_yscale('log')
     ax4.set_ylim(1e-11, 1e-5)
     ax4.grid(color='0.5')
+
+    # Set font sizes to all the plots (title, x axis, y axis, numbers, and colorbar labels)
+    for ax in [ax1, ax2, ax3, ax4]:
+        ax.title.set_size(20)
+        ax.xaxis.label.set_size(20)
+        ax.yaxis.label.set_size(20)
+        ax.tick_params(axis="both", which="major", labelsize=10)
     
     # Supertitle
     fig.suptitle('Iteration %d / %d' % (iteration + 1, num_iterations), fontsize='x-large')
@@ -241,8 +248,8 @@ final_iteration = num_iterations - 1
 plt.figure(figsize=(16, 6))
 plt.subplot(1, 2, 1)
 plt.title('Intensity image for last iteration')
-plt.xlabel('x/D')
-plt.ylabel('y/D')
+plt.xlabel('$\\lambda/D$')
+plt.ylabel('$\\lambda/D$')
 log_intensity = np.log10(images[final_iteration] / img_ref.max())
 hp.imshow_field(log_intensity, grid_units=spatial_resolution, cmap='inferno', vmin=-11, vmax=-5)
 plt.colorbar(label='Contrast ($log_{10}(I/I_{total})$)')
@@ -269,8 +276,8 @@ plt.show()
 # DM Surface
 plt.figure(figsize=(8, 8))
 plt.title('DM surface (nm) for last iteration')
-plt.xlabel('x (m)')
-plt.ylabel('y (m)')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
 deformable_mirror.actuators = actuators[final_iteration]
 hp.imshow_field(deformable_mirror.surface * 1e9, grid_units=pupil_diameter, mask=aperture, cmap='RdBu', vmin=-5, vmax=5)
 plt.colorbar(label='DM Surface (nm)')

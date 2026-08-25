@@ -19,12 +19,15 @@ telescope_pupil_generator = hp.make_circular_aperture(diameter)
 
 telescope_pupil = telescope_pupil_generator(pupil_grid)
 
+# Change font size for all plots (title, x axis, y axis, legend, colorbar, numbers)
+plt.rcParams.update({'font.size': 20, 'axes.titlesize': 20, 'axes.labelsize': 20, 'legend.fontsize': 20, 'xtick.labelsize': 20, 'ytick.labelsize': 20})
+
 # plot the pupil
 hp.imshow_field(telescope_pupil, cmap='gray')
 plt.colorbar(label='Amplitude')
 plt.title("Telescope Pupil (Before Lens 1)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
 plt.show()
 
 # define propagator (pupil to focal)
@@ -34,7 +37,7 @@ prop = hp.FraunhoferPropagator(pupil_grid, focal_grid)
 # obtain wavefront at telescope pupil plane for the star
 wavefront_star = hp.Wavefront(telescope_pupil)
 
-contrast = 1e-14 # Planet-to-star contrast
+contrast = 1e-13 # Planet-to-star contrast
 sqrt_contrast = np.sqrt(contrast) # Planet-to-star contrast (note: sqrt because we are working with the electric field)
 
 # Planet offset in units of lambda/D
@@ -60,8 +63,8 @@ focal_total_intensity = focal_star.intensity + focal_planet.intensity
 hp.imshow_field(np.log10(focal_total_intensity/focal_total_intensity.max()))
 plt.colorbar(label='Contrast ($log_{10}(I/I_{total})$)')
 plt.title("Intensity (Focal Plane, Before Occulter, After Lens 1)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('$\\lambda/D$')
+plt.ylabel('$\\lambda/D$')
 plt.show()
 
 # create the Gaussian occulter mask
@@ -82,8 +85,8 @@ I_focal_after_occulter = np.abs(E_focal_after_occulter)**2
 hp.imshow_field(I_focal_after_occulter/I_focal_after_occulter.max())
 plt.colorbar(label='Contrast ($I/I_{total}$)')
 plt.title("Intensity (Focal Plane, AFTER Occulter)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('$\\lambda/D$')
+plt.ylabel('$\\lambda/D$')
 plt.show()
 
 # after lens 2 but before Lyot Stop
@@ -96,8 +99,8 @@ total_intensity_occulter_no_lyot = star_occulter_no_lyot.intensity + planet_occu
 hp.imshow_field((total_intensity_occulter_no_lyot/total_intensity_occulter_no_lyot.max())**0.1)
 plt.colorbar(label='Contrast ($(I/I_{total})^{1/10}$)')
 plt.title("Pupil (Lyot) Plane Intensity (Occulter, No Lyot Stop) (Lyot Plane, After Lens 2)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
 plt.show()
 
 # create the occulter mask and Lyot Stop in the Lyot Coronagraph
@@ -111,10 +114,10 @@ total_intensity_occulter_lyot = star_occulter_lyot.intensity + planet_occulter_l
 
 # plot the focal plane intensity (star + planet) with occulter and Lyot Stop (Lyot (pupil) plane, after lens 2)
 hp.imshow_field(np.log10(total_intensity_occulter_lyot/total_intensity_occulter_lyot.max()))
-plt.colorbar(label='Contrast ($log_{10}(I/I_{toal})$)')
+plt.colorbar(label='Contrast ($log_{10}(I/I_{total})$)')
 plt.title("Final Coronagraphic Image (Occulter + Lyot Stop) (Lyot Plane, After Lens 2)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('X (m)')
+plt.ylabel('Y (m)')
 plt.show()
 
 # propagate the wavefront to the focal plane (after lens 3)
@@ -123,11 +126,12 @@ wavefront_focal_after_occulter_planet = prop.forward(planet_occulter_lyot)
 wavefront_focal_after_occulter_total_intensity = wavefront_focal_after_occulter_star.intensity + wavefront_focal_after_occulter_planet.intensity
 
 # plot the focal plane intensity (star + planet) after Lyot Stop
-hp.imshow_field(np.log10(wavefront_focal_after_occulter_total_intensity/wavefront_focal_after_occulter_total_intensity.max()))
+# hp.imshow_field(np.log10(wavefront_focal_after_occulter_total_intensity/wavefront_focal_after_occulter_total_intensity.max()))
+hp.imshow_field(np.log10(wavefront_focal_after_occulter_total_intensity/focal_total_intensity.max()))
 plt.colorbar(label='Contrast ($log_{10}(I/I_{total})$)')
 plt.title("Intensity After Lyot Stop (Focal Plane, After Lens 3)")
-plt.xlabel('x / D')
-plt.ylabel('y / D')
+plt.xlabel('$\\lambda/D$')
+plt.ylabel('$\\lambda/D$')
 plt.show()
 
 # call the contrast curve function
