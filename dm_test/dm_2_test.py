@@ -175,7 +175,7 @@ def make_animation_1dm(iteration):
 
     # 1. Intensity Image
     ax1 = fig.add_subplot(2, 2, 1)
-    ax1.set_title('Focal Plane Intensity Image')
+    ax1.set_title('Intensity Image')
     ax1.set_xlabel('$\\lambda/D$')
     ax1.set_ylabel('$\\lambda/D$')
     log_intensity = np.log10(images[iteration] / img_ref.max())
@@ -185,9 +185,9 @@ def make_animation_1dm(iteration):
 
     # 2. Average Contrast
     ax2 = fig.add_subplot(2, 2, 2)
-    ax2.set_title('Average contrast')
+    ax2.set_title('Average Contrast')
     ax2.set_xlabel('Iteration')
-    ax2.set_ylabel('Contrast ($log_{10}(I/I_{total})$)')
+    ax2.set_ylabel('Contrast ($I/I_{max}$)')
     ax2.plot(range(iteration + 1), average_contrast[:iteration + 1], 'o-')
     ax2.set_xlim(0, num_iterations)
     ax2.set_yscale('log')
@@ -196,7 +196,7 @@ def make_animation_1dm(iteration):
 
     # 3. DM1 Surface
     ax3 = fig.add_subplot(2, 2, 3)
-    ax3.set_title('DM1 surface')
+    ax3.set_title('DM1 Surface')
     ax3.set_xlabel('X (m)')
     ax3.set_ylabel('Y (m)')
     dm_img = hp.imshow_field(deformable_mirror_1.surface * 1e9, grid_units=pupil_diameter, mask=aperture, cmap='RdBu', vmin=-5, vmax=5, ax=ax3)
@@ -204,7 +204,7 @@ def make_animation_1dm(iteration):
 
     # 4. DM2 Surface
     ax4 = fig.add_subplot(2, 2, 4)
-    ax4.set_title('DM2 surface')
+    ax4.set_title('DM2 Surface')
     ax4.set_xlabel('X (m)')
     ax4.set_ylabel('Y (m)')
     dm_img = hp.imshow_field(deformable_mirror_2.surface * 1e9, grid_units=pupil_diameter, mask=aperture, cmap='RdBu', vmin=-5, vmax=5, ax=ax4)
