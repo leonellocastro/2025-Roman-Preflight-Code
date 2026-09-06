@@ -113,9 +113,9 @@ planet_occulter_lyot = prop_lyot.forward(wavefront_planet)
 total_intensity_occulter_lyot = star_occulter_lyot.intensity + planet_occulter_lyot.intensity
 
 # plot the focal plane intensity (star + planet) with occulter and Lyot Stop (Lyot (pupil) plane, after lens 2)
-hp.imshow_field(np.log10(total_intensity_occulter_lyot/total_intensity_occulter_lyot.max()))
+hp.imshow_field(np.maximum(np.log10(total_intensity_occulter_lyot/total_intensity_occulter_lyot.max()), -6))
 plt.colorbar(label='Contrast ($log_{10}(I/I_{total})$)')
-plt.title("Final Coronagraphic Image (Occulter + Lyot Stop) (Lyot Plane, After Lens 2)")
+plt.title("Coronagraphic Image (Lyot Plane, After Lens 2)")
 plt.xlabel('X (m)')
 plt.ylabel('Y (m)')
 plt.show()
@@ -135,7 +135,6 @@ plt.ylabel('$\\lambda/D$')
 plt.show()
 
 # call the contrast curve function
-
 contrast_curve(wavefront_star,focal_grid,prop,wavefront_focal_after_occulter_total_intensity,planet_offset_x,sigma_lambda_d)
 
 """
